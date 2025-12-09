@@ -73,6 +73,13 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
   ) async {
     if (state.status == TimerStatus.idle ||
         state.status == TimerStatus.completed) {
+      notifier.stopAll();
+      context.pop();
+      return;
+    }
+
+    if (state.status == TimerStatus.countdown) {
+      notifier.stopAll();
       context.pop();
       return;
     }
@@ -103,6 +110,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
     );
 
     if (shouldExit == true && mounted) {
+      notifier.stopAll();
       context.pop();
     }
   }
@@ -194,6 +202,7 @@ class _PortraitLayout extends StatelessWidget {
         border: Border.all(color: AppColors.success.withOpacity(0.3)),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(Icons.check_circle, color: AppColors.success, size: 48),
           const SizedBox(height: 12),
@@ -211,7 +220,48 @@ class _PortraitLayout extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyLarge,
             ),
           ],
-          if (timerState.roundTimes.isNotEmpty) ...[
+          if (timerState.lapTimes.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Container(
+              constraints: const BoxConstraints(maxHeight: 200),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    for (final lap in timerState.lapTimes)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Round ${lap.roundNumber}',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                            Row(
+                              children: [
+                                Text(
+                                  _formatDuration(lap.lapTime),
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  '(${_formatDuration(lap.cumulativeTime)})',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ] else if (timerState.roundTimes.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
               'Total time: ${_formatDuration(timerState.elapsedTime)}',

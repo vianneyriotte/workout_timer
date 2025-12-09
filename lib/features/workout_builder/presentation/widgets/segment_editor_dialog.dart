@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -128,7 +129,11 @@ class _SegmentEditorDialogState extends State<SegmentEditorDialog> {
             return ChoiceChip(
               label: Text(type.name.toUpperCase()),
               selected: isSelected,
-              onSelected: (_) => setState(() => _selectedType = type),
+              showCheckmark: false,
+              onSelected: (_) {
+                HapticFeedback.selectionClick();
+                setState(() => _selectedType = type);
+              },
               selectedColor: color.withOpacity(0.3),
               labelStyle: TextStyle(
                 color: isSelected ? color : AppColors.textSecondary,
@@ -162,7 +167,7 @@ class _SegmentEditorDialogState extends State<SegmentEditorDialog> {
       initialDuration: _amrapDuration,
       onChanged: (d) => setState(() => _amrapDuration = d),
       minDuration: const Duration(seconds: 10),
-      maxDuration: const Duration(hours: 2),
+      maxDuration: const Duration(hours: 12),
     );
   }
 
@@ -172,7 +177,10 @@ class _SegmentEditorDialogState extends State<SegmentEditorDialog> {
         SwitchListTile(
           title: const Text('Time Cap'),
           value: _hasTimeCap,
-          onChanged: (v) => setState(() => _hasTimeCap = v),
+          onChanged: (v) {
+            HapticFeedback.selectionClick();
+            setState(() => _hasTimeCap = v);
+          },
           activeColor: AppColors.forTime,
           contentPadding: EdgeInsets.zero,
         ),
@@ -182,7 +190,7 @@ class _SegmentEditorDialogState extends State<SegmentEditorDialog> {
             initialDuration: _timeCap,
             onChanged: (d) => setState(() => _timeCap = d),
             minDuration: const Duration(seconds: 10),
-            maxDuration: const Duration(hours: 2),
+            maxDuration: const Duration(hours: 12),
           ),
       ],
     );
@@ -196,7 +204,7 @@ class _SegmentEditorDialogState extends State<SegmentEditorDialog> {
           initialDuration: _emomInterval,
           onChanged: (d) => setState(() => _emomInterval = d),
           minDuration: const Duration(seconds: 10),
-          maxDuration: const Duration(minutes: 5),
+          maxDuration: const Duration(minutes: 30),
         ),
         const SizedBox(height: 16),
         _buildEmomRoundsPicker(),
@@ -225,7 +233,10 @@ class _SegmentEditorDialogState extends State<SegmentEditorDialog> {
               IconButton(
                 icon: const Icon(Icons.remove),
                 onPressed: _emomRounds > 1
-                    ? () => setState(() => _emomRounds--)
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _emomRounds--);
+                      }
                     : null,
               ),
               Padding(
@@ -241,7 +252,10 @@ class _SegmentEditorDialogState extends State<SegmentEditorDialog> {
               IconButton(
                 icon: const Icon(Icons.add),
                 onPressed: _emomRounds < 60
-                    ? () => setState(() => _emomRounds++)
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _emomRounds++);
+                      }
                     : null,
               ),
             ],
@@ -305,8 +319,12 @@ class _SegmentEditorDialogState extends State<SegmentEditorDialog> {
             children: [
               IconButton(
                 icon: const Icon(Icons.remove),
-                onPressed:
-                    _rounds > 1 ? () => setState(() => _rounds--) : null,
+                onPressed: _rounds > 1
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _rounds--);
+                      }
+                    : null,
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -320,8 +338,12 @@ class _SegmentEditorDialogState extends State<SegmentEditorDialog> {
               ),
               IconButton(
                 icon: const Icon(Icons.add),
-                onPressed:
-                    _rounds < 20 ? () => setState(() => _rounds++) : null,
+                onPressed: _rounds < 20
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _rounds++);
+                      }
+                    : null,
               ),
             ],
           ),
@@ -351,7 +373,10 @@ class _SegmentEditorDialogState extends State<SegmentEditorDialog> {
               IconButton(
                 icon: const Icon(Icons.remove),
                 onPressed: _tabataRounds > 1
-                    ? () => setState(() => _tabataRounds--)
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _tabataRounds--);
+                      }
                     : null,
               ),
               Padding(
@@ -367,7 +392,10 @@ class _SegmentEditorDialogState extends State<SegmentEditorDialog> {
               IconButton(
                 icon: const Icon(Icons.add),
                 onPressed: _tabataRounds < 50
-                    ? () => setState(() => _tabataRounds++)
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _tabataRounds++);
+                      }
                     : null,
               ),
             ],

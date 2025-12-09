@@ -125,6 +125,11 @@ class AudioService {
     }
   }
 
+  Future<void> stop() async {
+    await _player.stop();
+    await _tts.stop();
+  }
+
   void dispose() {
     _player.dispose();
     _tts.stop();

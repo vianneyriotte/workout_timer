@@ -59,7 +59,10 @@ class SegmentInfo extends StatelessWidget {
       AmrapSegment() => _AmrapDetails(
           roundsCompleted: state.roundsCompleted,
         ),
-      ForTimeSegment() => const SizedBox.shrink(),
+      ForTimeSegment(:final timeCap) => _ForTimeDetails(
+          timeCap: timeCap,
+          elapsed: state.elapsedTime,
+        ),
       EmomSegment(:final intervalCount) => _EmomDetails(
           currentInterval: state.currentEmomInterval,
           totalIntervals: intervalCount,
@@ -89,6 +92,49 @@ class SegmentInfo extends StatelessWidget {
       TimerPhase.rest => AppColors.rest,
       TimerPhase.prepare => AppColors.prepare,
     };
+  }
+}
+
+class _ForTimeDetails extends StatelessWidget {
+  final Duration? timeCap;
+  final Duration elapsed;
+
+  const _ForTimeDetails({
+    required this.timeCap,
+    required this.elapsed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (timeCap == null) return const SizedBox.shrink();
+
+    final remaining = timeCap! - elapsed;
+    final remainingText = _formatDuration(remaining.isNegative ? Duration.zero : remaining);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.flag, color: AppColors.textSecondary, size: 20),
+        const SizedBox(width: 8),
+        Text(
+          'Cap: $remainingText',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+        ),
+      ],
+    );
+  }
+
+  String _formatDuration(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    final seconds = duration.inSeconds.remainder(60);
+
+    if (hours > 0) {
+      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    }
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 }
 

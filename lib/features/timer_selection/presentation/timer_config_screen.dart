@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
@@ -100,7 +101,7 @@ class _TimerConfigScreenState extends ConsumerState<TimerConfigScreen> {
           initialDuration: _duration,
           onChanged: (d) => setState(() => _duration = d),
           minDuration: const Duration(seconds: 10),
-          maxDuration: const Duration(hours: 2),
+          maxDuration: const Duration(hours: 12),
         ),
         const SizedBox(height: 16),
         _buildPresetDurations([5, 10, 15, 20, 30]),
@@ -123,7 +124,10 @@ class _TimerConfigScreenState extends ConsumerState<TimerConfigScreen> {
           title: const Text('Time Cap'),
           subtitle: const Text('Set a maximum time limit'),
           value: _hasTimeCap,
-          onChanged: (v) => setState(() => _hasTimeCap = v),
+          onChanged: (v) {
+            HapticFeedback.selectionClick();
+            setState(() => _hasTimeCap = v);
+          },
           activeColor: _color,
           contentPadding: EdgeInsets.zero,
         ),
@@ -134,7 +138,7 @@ class _TimerConfigScreenState extends ConsumerState<TimerConfigScreen> {
             initialDuration: _timeCap ?? const Duration(minutes: 20),
             onChanged: (d) => setState(() => _timeCap = d),
             minDuration: const Duration(seconds: 10),
-            maxDuration: const Duration(hours: 2),
+            maxDuration: const Duration(hours: 12),
           ),
           const SizedBox(height: 16),
           _buildPresetDurations([10, 15, 20, 30, 45]),
@@ -159,7 +163,7 @@ class _TimerConfigScreenState extends ConsumerState<TimerConfigScreen> {
           initialDuration: _intervalDuration,
           onChanged: (d) => setState(() => _intervalDuration = d),
           minDuration: const Duration(seconds: 10),
-          maxDuration: const Duration(minutes: 5),
+          maxDuration: const Duration(minutes: 30),
         ),
         const SizedBox(height: 24),
         _buildEmomRoundsPicker(),
@@ -191,8 +195,12 @@ class _TimerConfigScreenState extends ConsumerState<TimerConfigScreen> {
             children: [
               IconButton(
                 icon: const Icon(Icons.remove),
-                onPressed:
-                    _emomRounds > 1 ? () => setState(() => _emomRounds--) : null,
+                onPressed: _emomRounds > 1
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _emomRounds--);
+                      }
+                    : null,
               ),
               const SizedBox(width: 16),
               Text(
@@ -205,8 +213,12 @@ class _TimerConfigScreenState extends ConsumerState<TimerConfigScreen> {
               const SizedBox(width: 16),
               IconButton(
                 icon: const Icon(Icons.add),
-                onPressed:
-                    _emomRounds < 60 ? () => setState(() => _emomRounds++) : null,
+                onPressed: _emomRounds < 60
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _emomRounds++);
+                      }
+                    : null,
               ),
             ],
           ),
@@ -219,7 +231,11 @@ class _TimerConfigScreenState extends ConsumerState<TimerConfigScreen> {
               return ChoiceChip(
                 label: Text('$r'),
                 selected: _emomRounds == r,
-                onSelected: (_) => setState(() => _emomRounds = r),
+                showCheckmark: false,
+                onSelected: (_) {
+                  HapticFeedback.selectionClick();
+                  setState(() => _emomRounds = r);
+                },
                 selectedColor: _color.withOpacity(0.3),
                 labelStyle: TextStyle(
                   color: _emomRounds == r ? _color : AppColors.textSecondary,
@@ -293,17 +309,24 @@ class _TimerConfigScreenState extends ConsumerState<TimerConfigScreen> {
     return Wrap(
       spacing: 8,
       children: minutes.map((m) {
-        final isSelected = _duration.inMinutes == m ||
-            (_timeCap?.inMinutes == m && widget.timerType == 'fortime');
+        final presetDuration = Duration(minutes: m);
+        final bool isSelected;
+        if (widget.timerType == 'fortime') {
+          isSelected = _timeCap == presetDuration;
+        } else {
+          isSelected = _duration == presetDuration;
+        }
         return ChoiceChip(
           label: Text('${m}min'),
           selected: isSelected,
+          showCheckmark: false,
           onSelected: (_) {
+            HapticFeedback.selectionClick();
             setState(() {
               if (widget.timerType == 'fortime') {
-                _timeCap = Duration(minutes: m);
+                _timeCap = presetDuration;
               } else {
-                _duration = Duration(minutes: m);
+                _duration = presetDuration;
               }
             });
           },
@@ -336,8 +359,12 @@ class _TimerConfigScreenState extends ConsumerState<TimerConfigScreen> {
             children: [
               IconButton(
                 icon: const Icon(Icons.remove),
-                onPressed:
-                    _rounds > 1 ? () => setState(() => _rounds--) : null,
+                onPressed: _rounds > 1
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _rounds--);
+                      }
+                    : null,
               ),
               const SizedBox(width: 16),
               Text(
@@ -350,8 +377,12 @@ class _TimerConfigScreenState extends ConsumerState<TimerConfigScreen> {
               const SizedBox(width: 16),
               IconButton(
                 icon: const Icon(Icons.add),
-                onPressed:
-                    _rounds < 50 ? () => setState(() => _rounds++) : null,
+                onPressed: _rounds < 50
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _rounds++);
+                      }
+                    : null,
               ),
             ],
           ),
@@ -364,7 +395,11 @@ class _TimerConfigScreenState extends ConsumerState<TimerConfigScreen> {
               return ChoiceChip(
                 label: Text('$r'),
                 selected: _rounds == r,
-                onSelected: (_) => setState(() => _rounds = r),
+                showCheckmark: false,
+                onSelected: (_) {
+                  HapticFeedback.selectionClick();
+                  setState(() => _rounds = r);
+                },
                 selectedColor: _color.withOpacity(0.3),
                 labelStyle: TextStyle(
                   color: _rounds == r ? _color : AppColors.textSecondary,
@@ -448,7 +483,10 @@ class _TimerConfigScreenState extends ConsumerState<TimerConfigScreen> {
               IconButton(
                 icon: const Icon(Icons.remove),
                 onPressed: _countdownSeconds > 0
-                    ? () => setState(() => _countdownSeconds--)
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _countdownSeconds--);
+                      }
                     : null,
               ),
               const SizedBox(width: 16),
@@ -463,7 +501,10 @@ class _TimerConfigScreenState extends ConsumerState<TimerConfigScreen> {
               IconButton(
                 icon: const Icon(Icons.add),
                 onPressed: _countdownSeconds < 30
-                    ? () => setState(() => _countdownSeconds++)
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _countdownSeconds++);
+                      }
                     : null,
               ),
             ],
@@ -477,7 +518,11 @@ class _TimerConfigScreenState extends ConsumerState<TimerConfigScreen> {
               return ChoiceChip(
                 label: Text('${s}s'),
                 selected: _countdownSeconds == s,
-                onSelected: (_) => setState(() => _countdownSeconds = s),
+                showCheckmark: false,
+                onSelected: (_) {
+                  HapticFeedback.selectionClick();
+                  setState(() => _countdownSeconds = s);
+                },
                 selectedColor: _color.withOpacity(0.3),
                 labelStyle: TextStyle(
                   color: _countdownSeconds == s ? _color : AppColors.textSecondary,
@@ -562,11 +607,13 @@ class _TimerConfigScreenState extends ConsumerState<TimerConfigScreen> {
   }
 
   void _startWorkout() {
+    HapticFeedback.mediumImpact();
     final workout = _createWorkout();
     context.push('/timer', extra: workout);
   }
 
   void _savePreset() async {
+    HapticFeedback.lightImpact();
     final nameController = TextEditingController(text: _title);
 
     final name = await showDialog<String>(

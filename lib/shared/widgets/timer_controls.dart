@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../features/timer/domain/models/models.dart';
@@ -97,7 +98,10 @@ class _MainControlButton extends StatelessWidget {
     };
 
     return GestureDetector(
-      onTap: callback,
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        callback();
+      },
       child: Container(
         width: 80,
         height: 80,
@@ -140,7 +144,10 @@ class _ControlButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onPressed,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onPressed();
+      },
       child: Container(
         width: size,
         height: size,

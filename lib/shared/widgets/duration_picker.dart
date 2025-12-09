@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/theme/app_colors.dart';
 
@@ -33,6 +34,9 @@ class _DurationPickerState extends State<DurationPicker> {
   late int _minutes;
   late int _seconds;
 
+  bool _isScrolling = false;
+  bool _externalUpdate = false;
+
   @override
   void initState() {
     super.initState();
@@ -46,6 +50,24 @@ class _DurationPickerState extends State<DurationPicker> {
   }
 
   @override
+  void didUpdateWidget(DurationPicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialDuration != widget.initialDuration && !_isScrolling) {
+      _externalUpdate = true;
+      _hours = widget.initialDuration.inHours;
+      _minutes = widget.initialDuration.inMinutes.remainder(60);
+      _seconds = widget.initialDuration.inSeconds.remainder(60);
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _hoursController.jumpToItem(_hours);
+        _minutesController.jumpToItem(_minutes);
+        _secondsController.jumpToItem(_seconds);
+        _externalUpdate = false;
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _hoursController.dispose();
     _minutesController.dispose();
@@ -53,7 +75,9 @@ class _DurationPickerState extends State<DurationPicker> {
     super.dispose();
   }
 
-  void _updateDuration() {
+  void _onScrollEnd() {
+    if (_externalUpdate) return;
+
     var duration = Duration(
       hours: _hours,
       minutes: _minutes,
@@ -115,41 +139,52 @@ class _DurationPickerState extends State<DurationPicker> {
                   ),
                 ),
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (widget.showHours) ...[
+              NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification is ScrollStartNotification) {
+                    _isScrolling = true;
+                  } else if (notification is ScrollEndNotification) {
+                    _isScrolling = false;
+                    _onScrollEnd();
+                  }
+                  return false;
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (widget.showHours || widget.maxDuration.inHours >= 1) ...[
+                      _WheelPicker(
+                        controller: _hoursController,
+                        maxValue: widget.maxDuration.inHours.clamp(0, 23),
+                        label: 'h',
+                        onChanged: (value) {
+                          HapticFeedback.selectionClick();
+                          _hours = value;
+                        },
+                      ),
+                      const _Separator(),
+                    ],
                     _WheelPicker(
-                      controller: _hoursController,
-                      maxValue: 23,
-                      label: 'h',
+                      controller: _minutesController,
+                      maxValue: 59,
+                      label: 'm',
                       onChanged: (value) {
-                        setState(() => _hours = value);
-                        _updateDuration();
+                        HapticFeedback.selectionClick();
+                        _minutes = value;
                       },
                     ),
                     const _Separator(),
+                    _WheelPicker(
+                      controller: _secondsController,
+                      maxValue: 59,
+                      label: 's',
+                      onChanged: (value) {
+                        HapticFeedback.selectionClick();
+                        _seconds = value;
+                      },
+                    ),
                   ],
-                  _WheelPicker(
-                    controller: _minutesController,
-                    maxValue: 59,
-                    label: 'm',
-                    onChanged: (value) {
-                      setState(() => _minutes = value);
-                      _updateDuration();
-                    },
-                  ),
-                  const _Separator(),
-                  _WheelPicker(
-                    controller: _secondsController,
-                    maxValue: 59,
-                    label: 's',
-                    onChanged: (value) {
-                      setState(() => _seconds = value);
-                      _updateDuration();
-                    },
-                  ),
-                ],
+                ),
               ),
             ],
           ),

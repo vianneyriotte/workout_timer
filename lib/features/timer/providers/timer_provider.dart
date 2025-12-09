@@ -365,7 +365,25 @@ class TimerNotifier extends StateNotifier<TimerState> {
   }
 
   void addRound() {
-    state = state.copyWith(roundsCompleted: state.roundsCompleted + 1);
+    final newRoundNumber = state.roundsCompleted + 1;
+    final cumulativeTime = state.elapsedTime;
+
+    // Calculate lap time (time since last round)
+    final previousCumulativeTime = state.lapTimes.isNotEmpty
+        ? state.lapTimes.last.cumulativeTime
+        : Duration.zero;
+    final lapTime = cumulativeTime - previousCumulativeTime;
+
+    final newLapTime = LapTime(
+      roundNumber: newRoundNumber,
+      cumulativeTime: cumulativeTime,
+      lapTime: lapTime,
+    );
+
+    state = state.copyWith(
+      roundsCompleted: newRoundNumber,
+      lapTimes: [...state.lapTimes, newLapTime],
+    );
   }
 
   void completeForTime() {
@@ -377,9 +395,14 @@ class TimerNotifier extends StateNotifier<TimerState> {
     _moveToNextSegment();
   }
 
+  void stopAll() {
+    _timer?.cancel();
+    _audioService.stop();
+  }
+
   @override
   void dispose() {
-    _timer?.cancel();
+    stopAll();
     super.dispose();
   }
 }

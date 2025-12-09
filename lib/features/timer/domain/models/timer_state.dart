@@ -3,6 +3,21 @@ import 'package:equatable/equatable.dart';
 import 'workout.dart';
 import 'workout_segment.dart';
 
+class LapTime extends Equatable {
+  final int roundNumber;
+  final Duration cumulativeTime;
+  final Duration lapTime;
+
+  const LapTime({
+    required this.roundNumber,
+    required this.cumulativeTime,
+    required this.lapTime,
+  });
+
+  @override
+  List<Object?> get props => [roundNumber, cumulativeTime, lapTime];
+}
+
 enum TimerStatus {
   idle,
   countdown,
@@ -35,6 +50,7 @@ class TimerState extends Equatable {
   final DateTime? startedAt;
   final DateTime? pausedAt;
   final List<Duration> roundTimes;
+  final List<LapTime> lapTimes;
 
   const TimerState({
     required this.workout,
@@ -53,6 +69,7 @@ class TimerState extends Equatable {
     this.startedAt,
     this.pausedAt,
     this.roundTimes = const [],
+    this.lapTimes = const [],
   });
 
   WorkoutSegment? get currentSegment {
@@ -85,8 +102,11 @@ class TimerState extends Equatable {
   }
 
   double get progress {
+    if (status == TimerStatus.completed) return 1.0;
+    if (status == TimerStatus.idle) return 0.0;
+
     final segment = currentSegment;
-    if (segment == null) return 0;
+    if (segment == null) return 1.0;
 
     final total = switch (segment) {
       AmrapSegment(:final duration) => duration.inSeconds,
@@ -98,12 +118,14 @@ class TimerState extends Equatable {
       RestSegment(:final duration) => duration.inSeconds,
     };
 
-    if (total == 0) return 0;
+    if (total == 0) return 1.0;
 
-    return switch (segment) {
+    final result = switch (segment) {
       ForTimeSegment() => elapsedTime.inSeconds / total,
       _ => 1 - (remainingTime.inSeconds / total),
     };
+
+    return result.clamp(0.0, 1.0);
   }
 
   TimerState copyWith({
@@ -123,6 +145,7 @@ class TimerState extends Equatable {
     DateTime? startedAt,
     DateTime? pausedAt,
     List<Duration>? roundTimes,
+    List<LapTime>? lapTimes,
   }) {
     return TimerState(
       workout: workout ?? this.workout,
@@ -141,6 +164,7 @@ class TimerState extends Equatable {
       startedAt: startedAt ?? this.startedAt,
       pausedAt: pausedAt ?? this.pausedAt,
       roundTimes: roundTimes ?? this.roundTimes,
+      lapTimes: lapTimes ?? this.lapTimes,
     );
   }
 
@@ -162,5 +186,6 @@ class TimerState extends Equatable {
         startedAt,
         pausedAt,
         roundTimes,
+        lapTimes,
       ];
 }
