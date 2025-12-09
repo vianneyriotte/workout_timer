@@ -73,6 +73,15 @@ class SegmentInfo extends StatelessWidget {
           phase: state.phase,
         ),
       RestSegment() => const SizedBox.shrink(),
+      TempoSegment(:final tempo, :final tempoRounds, :final roundDuration) =>
+        _TempoDetails(
+          tempo: tempo,
+          currentRound: state.currentTempoRound,
+          totalRounds: tempoRounds,
+          currentPhase: state.currentTempoPhase,
+          remainingTime: state.remainingTime,
+          roundDuration: roundDuration,
+        ),
     };
   }
 
@@ -83,6 +92,7 @@ class SegmentInfo extends StatelessWidget {
       SegmentType.emom => AppColors.emom,
       SegmentType.tabata => AppColors.tabata,
       SegmentType.rest => AppColors.rest,
+      SegmentType.tempo => AppColors.tempo,
     };
   }
 
@@ -233,6 +243,92 @@ class _TabataDetails extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TempoDetails extends StatelessWidget {
+  final List<int> tempo;
+  final int currentRound;
+  final int totalRounds;
+  final int currentPhase;
+  final Duration remainingTime;
+  final Duration roundDuration;
+
+  const _TempoDetails({
+    required this.tempo,
+    required this.currentRound,
+    required this.totalRounds,
+    required this.currentPhase,
+    required this.remainingTime,
+    required this.roundDuration,
+  });
+
+  String get _phaseName {
+    return switch (currentPhase) {
+      0 => 'Eccentric',
+      1 => 'Bottom',
+      2 => 'Concentric',
+      3 => 'Top',
+      _ => '',
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.speed, color: AppColors.textSecondary, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Round $currentRound/$totalRounds',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(4, (index) {
+            final isActive = index == currentPhase;
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? AppColors.tempo.withOpacity(0.3)
+                    : AppColors.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isActive ? AppColors.tempo : Colors.transparent,
+                  width: 2,
+                ),
+              ),
+              child: Text(
+                '${tempo[index]}',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                  color: isActive ? AppColors.tempo : AppColors.textSecondary,
+                ),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          _phaseName,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.tempo,
+                fontWeight: FontWeight.bold,
+              ),
         ),
       ],
     );

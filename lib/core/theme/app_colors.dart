@@ -26,4 +26,5 @@ class AppColors {
   static const Color emom = Color(0xFFF59E0B);
   static const Color tabata = Color(0xFFEF4444);
   static const Color custom = Color(0xFF8B5CF6);
+  static const Color tempo = Color(0xFFEC4899);
 }

@@ -265,4 +265,33 @@ class QuickWorkout {
       createdAt: DateTime.now(),
     );
   }
+
+  static Workout tempo({
+    required String id,
+    required List<int> tempoPattern,
+    required int tempoRounds,
+    required Duration roundDuration,
+    String name = 'TEMPO',
+    Duration countdownDuration = const Duration(seconds: 10),
+  }) {
+    return Workout(
+      id: id,
+      name: name,
+      groups: [
+        SegmentGroup(
+          id: '${id}_group',
+          segments: [
+            TempoSegment(
+              id: '${id}_segment',
+              tempo: tempoPattern,
+              tempoRounds: tempoRounds,
+              roundDuration: roundDuration,
+            ),
+          ],
+        ),
+      ],
+      countdownDuration: countdownDuration,
+      createdAt: DateTime.now(),
+    );
+  }
 }

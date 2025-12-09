@@ -89,6 +89,13 @@ class HomeScreen extends ConsumerWidget {
                     color: AppColors.tabata,
                     onTap: () => context.push('/config/tabata'),
                   ),
+                  _TimerTypeCard(
+                    title: 'TEMPO',
+                    subtitle: 'Control movement speed',
+                    icon: Icons.speed,
+                    color: AppColors.tempo,
+                    onTap: () => context.push('/config/tempo'),
+                  ),
                 ]),
               ),
             ),

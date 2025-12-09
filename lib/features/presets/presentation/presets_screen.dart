@@ -197,6 +197,7 @@ class _PresetCard extends StatelessWidget {
       SegmentType.emom => AppColors.emom,
       SegmentType.tabata => AppColors.tabata,
       SegmentType.rest => AppColors.rest,
+      SegmentType.tempo => AppColors.tempo,
     };
   }
 

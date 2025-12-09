@@ -770,6 +770,7 @@ class _SegmentTile extends StatelessWidget {
         SegmentType.emom => AppColors.emom,
         SegmentType.tabata => AppColors.tabata,
         SegmentType.rest => AppColors.rest,
+        SegmentType.tempo => AppColors.tempo,
       };
 
   @override
@@ -871,6 +872,7 @@ class _SegmentTile extends StatelessWidget {
       SegmentType.emom => Icons.schedule,
       SegmentType.tabata => Icons.fitness_center,
       SegmentType.rest => Icons.pause_circle_outline,
+      SegmentType.tempo => Icons.speed,
     };
   }
 
@@ -891,6 +893,8 @@ class _SegmentTile extends StatelessWidget {
         '${TimeFormatter.formatDurationShort(workDuration)}/${TimeFormatter.formatDurationShort(restDuration)} x $tabataRounds',
       RestSegment(:final duration) =>
         TimeFormatter.formatDurationShort(duration),
+      TempoSegment(:final tempo, :final tempoRounds, :final roundDuration) =>
+        '${tempo.join("-")} • ${TimeFormatter.formatDurationShort(roundDuration)} x $tempoRounds',
     };
   }
 }

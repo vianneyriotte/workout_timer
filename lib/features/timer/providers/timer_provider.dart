@@ -75,6 +75,7 @@ class TimerNotifier extends StateNotifier<TimerState> {
       EmomSegment() => 'EMOM, Let\'s go!',
       TabataSegment() => 'Tabata, Let\'s go!',
       RestSegment() => 'Rest',
+      TempoSegment() => 'Tempo, Let\'s go!',
     };
     _audioService.announceSegmentStart(segmentName);
 
@@ -84,16 +85,30 @@ class TimerNotifier extends StateNotifier<TimerState> {
       EmomSegment(:final intervalDuration) => (intervalDuration, TimerPhase.work),
       TabataSegment(:final workDuration) => (workDuration, TimerPhase.work),
       RestSegment(:final duration) => (duration, TimerPhase.rest),
+      TempoSegment() => (Duration.zero, TimerPhase.work),
     };
 
     state = state.copyWith(
       status: TimerStatus.running,
       phase: phase,
-      remainingTime: remainingTime,
+      remainingTime: segment is TempoSegment
+          ? (segment as TempoSegment).roundDuration
+          : remainingTime,
       elapsedTime: Duration.zero,
       currentTabataRound: segment is TabataSegment ? 1 : 0,
       currentEmomInterval: segment is EmomSegment ? 1 : 0,
+      currentTempoRound: segment is TempoSegment ? 1 : 0,
+      currentTempoPhase: segment is TempoSegment ? 0 : 0,
+      currentTempoCount: segment is TempoSegment
+          ? (segment as TempoSegment).tempo[0] == 0
+              ? 0
+              : (segment as TempoSegment).tempo[0]
+          : 0,
     );
+
+    if (segment is TempoSegment) {
+      _audioService.announceTempoRound(1);
+    }
   }
 
   void _startTimer() {
@@ -121,6 +136,8 @@ class TimerNotifier extends StateNotifier<TimerState> {
         _tickTabata();
       case RestSegment():
         _tickRest();
+      case TempoSegment():
+        _tickTempo();
     }
   }
 
@@ -284,6 +301,57 @@ class TimerNotifier extends StateNotifier<TimerState> {
         elapsedTime: state.elapsedTime + const Duration(seconds: 1),
       );
     }
+  }
+
+  void _tickTempo() {
+    final segment = state.currentSegment as TempoSegment;
+    final tempo = segment.tempo;
+    var currentPhase = state.currentTempoPhase;
+    var currentCount = state.currentTempoCount;
+    var currentRound = state.currentTempoRound;
+
+    _audioService.speakNumber(currentCount);
+
+    final remaining = state.remainingTime - const Duration(seconds: 1);
+
+    if (remaining.inSeconds <= 0) {
+      currentRound++;
+      if (currentRound > segment.tempoRounds) {
+        _audioService.playCompleteBeep();
+        _moveToNextSegment();
+        return;
+      }
+      _audioService.announceTempoRound(currentRound);
+      currentPhase = 0;
+      currentCount = tempo[0] == 0 ? 0 : tempo[0];
+      state = state.copyWith(
+        remainingTime: segment.roundDuration,
+        elapsedTime: state.elapsedTime + const Duration(seconds: 1),
+        currentTempoPhase: currentPhase,
+        currentTempoCount: currentCount,
+        currentTempoRound: currentRound,
+      );
+      return;
+    }
+
+    if (currentCount <= 1) {
+      currentPhase++;
+      if (currentPhase >= tempo.length) {
+        currentPhase = 0;
+      }
+      final nextPhaseValue = tempo[currentPhase];
+      currentCount = nextPhaseValue == 0 ? 0 : nextPhaseValue;
+    } else {
+      currentCount--;
+    }
+
+    state = state.copyWith(
+      elapsedTime: state.elapsedTime + const Duration(seconds: 1),
+      remainingTime: remaining,
+      currentTempoPhase: currentPhase,
+      currentTempoCount: currentCount,
+      currentTempoRound: currentRound,
+    );
   }
 
   void _moveToNextSegment() {

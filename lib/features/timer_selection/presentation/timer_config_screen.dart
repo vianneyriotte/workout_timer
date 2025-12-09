@@ -35,11 +35,16 @@ class _TimerConfigScreenState extends ConsumerState<TimerConfigScreen> {
   bool _hasTimeCap = true;
   int _countdownSeconds = 10;
 
+  List<int> _tempo = [4, 0, 1, 2];
+  Duration _tempoRoundDuration = const Duration(minutes: 1);
+  int _tempoRounds = 5;
+
   String get _title => switch (widget.timerType) {
         'amrap' => 'AMRAP',
         'fortime' => 'FOR TIME',
         'emom' => 'EMOM',
         'tabata' => 'TABATA',
+        'tempo' => 'TEMPO',
         _ => 'Timer',
       };
 
@@ -48,6 +53,7 @@ class _TimerConfigScreenState extends ConsumerState<TimerConfigScreen> {
         'fortime' => AppColors.forTime,
         'emom' => AppColors.emom,
         'tabata' => AppColors.tabata,
+        'tempo' => AppColors.tempo,
         _ => AppColors.primary,
       };
 
@@ -83,6 +89,7 @@ class _TimerConfigScreenState extends ConsumerState<TimerConfigScreen> {
       'fortime' => _buildForTimeConfig(),
       'emom' => _buildEmomConfig(),
       'tabata' => _buildTabataConfig(),
+      'tempo' => _buildTempoConfig(),
       _ => const SizedBox.shrink(),
     };
   }
@@ -279,6 +286,240 @@ class _TimerConfigScreenState extends ConsumerState<TimerConfigScreen> {
         const SizedBox(height: 24),
         _buildCountdownPicker(),
       ],
+    );
+  }
+
+  Widget _buildTempoConfig() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildDescription(
+          'Control movement speed with a 4-digit tempo: '
+          'eccentric-bottom-concentric-top. Each number counts down vocally.',
+        ),
+        const SizedBox(height: 32),
+        _buildTempoPicker(),
+        const SizedBox(height: 24),
+        DurationPicker(
+          label: 'Round Duration',
+          initialDuration: _tempoRoundDuration,
+          onChanged: (d) => setState(() => _tempoRoundDuration = d),
+          minDuration: const Duration(seconds: 10),
+          maxDuration: const Duration(minutes: 10),
+        ),
+        const SizedBox(height: 24),
+        _buildTempoRoundsPicker(),
+        const SizedBox(height: 16),
+        _buildTempoInfo(),
+        const SizedBox(height: 24),
+        _buildCountdownPicker(),
+      ],
+    );
+  }
+
+  Widget _buildTempoPicker() {
+    final labels = ['Eccentric', 'Bottom', 'Concentric', 'Top'];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Tempo Pattern',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: List.generate(4, (index) {
+            return Column(
+              children: [
+                Text(
+                  labels[index],
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  width: 70,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.add, size: 20),
+                        onPressed: _tempo[index] < 10
+                            ? () {
+                                HapticFeedback.lightImpact();
+                                setState(() {
+                                  _tempo = List.from(_tempo);
+                                  _tempo[index]++;
+                                });
+                              }
+                            : null,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minHeight: 32),
+                      ),
+                      Text(
+                        '${_tempo[index]}',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: _color,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.remove, size: 20),
+                        onPressed: _tempo[index] > 0
+                            ? () {
+                                HapticFeedback.lightImpact();
+                                setState(() {
+                                  _tempo = List.from(_tempo);
+                                  _tempo[index]--;
+                                });
+                              }
+                            : null,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minHeight: 32),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }),
+        ),
+        const SizedBox(height: 12),
+        Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: _color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              _tempo.join(' - '),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: _color,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTempoRoundsPicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Number of Rounds',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.remove),
+                onPressed: _tempoRounds > 1
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _tempoRounds--);
+                      }
+                    : null,
+              ),
+              const SizedBox(width: 16),
+              Text(
+                '$_tempoRounds',
+                style: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 16),
+              IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: _tempoRounds < 20
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _tempoRounds++);
+                      }
+                    : null,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Center(
+          child: Wrap(
+            spacing: 8,
+            children: [1, 3, 5, 8, 10].map((r) {
+              return ChoiceChip(
+                label: Text('$r'),
+                selected: _tempoRounds == r,
+                showCheckmark: false,
+                onSelected: (_) {
+                  HapticFeedback.selectionClick();
+                  setState(() => _tempoRounds = r);
+                },
+                selectedColor: _color.withOpacity(0.3),
+                labelStyle: TextStyle(
+                  color: _tempoRounds == r ? _color : AppColors.textSecondary,
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTempoInfo() {
+    final repDuration = _tempo.fold(0, (sum, t) => sum + (t == 0 ? 1 : t));
+    final totalDuration = _tempoRoundDuration.inSeconds * _tempoRounds;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.timer, size: 16, color: AppColors.textSecondary),
+              const SizedBox(width: 8),
+              Text(
+                '${repDuration}s per rep • ${TimeFormatter.formatDurationShort(_tempoRoundDuration)} per round',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Total: ${TimeFormatter.formatDurationShort(Duration(seconds: totalDuration))}',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: _color,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -600,6 +841,13 @@ class _TimerConfigScreenState extends ConsumerState<TimerConfigScreen> {
           workDuration: _workDuration,
           restDuration: _restDuration,
           rounds: _rounds,
+          countdownDuration: countdown,
+        ),
+      'tempo' => QuickWorkout.tempo(
+          id: id,
+          tempoPattern: _tempo,
+          tempoRounds: _tempoRounds,
+          roundDuration: _tempoRoundDuration,
           countdownDuration: countdown,
         ),
       _ => throw UnimplementedError(),

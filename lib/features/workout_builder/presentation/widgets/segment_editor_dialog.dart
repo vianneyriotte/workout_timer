@@ -43,6 +43,11 @@ class _SegmentEditorDialogState extends State<SegmentEditorDialog> {
   // REST
   Duration _restDuration = const Duration(minutes: 2);
 
+  // TEMPO
+  List<int> _tempo = [4, 0, 1, 2];
+  Duration _tempoRoundDuration = const Duration(minutes: 1);
+  int _tempoRounds = 5;
+
   @override
   void initState() {
     super.initState();
@@ -79,6 +84,10 @@ class _SegmentEditorDialogState extends State<SegmentEditorDialog> {
         _tabataRounds = tabataRounds;
       case RestSegment(:final duration):
         _restDuration = duration;
+      case TempoSegment(:final tempo, :final tempoRounds, :final roundDuration):
+        _tempo = List.from(tempo);
+        _tempoRounds = tempoRounds;
+        _tempoRoundDuration = roundDuration;
     }
   }
 
@@ -158,6 +167,7 @@ class _SegmentEditorDialogState extends State<SegmentEditorDialog> {
       SegmentType.emom => _buildEmomConfig(),
       SegmentType.tabata => _buildTabataConfig(),
       SegmentType.rest => _buildRestConfig(),
+      SegmentType.tempo => _buildTempoConfig(),
     };
   }
 
@@ -296,6 +306,141 @@ class _SegmentEditorDialogState extends State<SegmentEditorDialog> {
       onChanged: (d) => setState(() => _restDuration = d),
       minDuration: const Duration(seconds: 10),
       maxDuration: const Duration(minutes: 10),
+    );
+  }
+
+  Widget _buildTempoConfig() {
+    return Column(
+      children: [
+        _buildTempoPicker(),
+        const SizedBox(height: 16),
+        DurationPicker(
+          label: 'Round Duration',
+          initialDuration: _tempoRoundDuration,
+          onChanged: (d) => setState(() => _tempoRoundDuration = d),
+          minDuration: const Duration(seconds: 10),
+          maxDuration: const Duration(minutes: 10),
+        ),
+        const SizedBox(height: 16),
+        _buildTempoRoundsPicker(),
+      ],
+    );
+  }
+
+  Widget _buildTempoPicker() {
+    final labels = ['Ecc', 'Bot', 'Con', 'Top'];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Tempo Pattern', style: Theme.of(context).textTheme.bodyMedium),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: List.generate(4, (index) {
+            return Column(
+              children: [
+                Text(labels[index],
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: AppColors.textSecondary)),
+                const SizedBox(height: 4),
+                Container(
+                  width: 55,
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.add, size: 18),
+                        onPressed: _tempo[index] < 10
+                            ? () {
+                                HapticFeedback.lightImpact();
+                                setState(() {
+                                  _tempo = List.from(_tempo);
+                                  _tempo[index]++;
+                                });
+                              }
+                            : null,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minHeight: 28),
+                      ),
+                      Text('${_tempo[index]}',
+                          style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.tempo)),
+                      IconButton(
+                        icon: const Icon(Icons.remove, size: 18),
+                        onPressed: _tempo[index] > 0
+                            ? () {
+                                HapticFeedback.lightImpact();
+                                setState(() {
+                                  _tempo = List.from(_tempo);
+                                  _tempo[index]--;
+                                });
+                              }
+                            : null,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minHeight: 28),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTempoRoundsPicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Number of Rounds', style: Theme.of(context).textTheme.bodyMedium),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceLight,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.remove),
+                onPressed: _tempoRounds > 1
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _tempoRounds--);
+                      }
+                    : null,
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text('$_tempoRounds',
+                    style: const TextStyle(
+                        fontSize: 24, fontWeight: FontWeight.bold)),
+              ),
+              IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: _tempoRounds < 20
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _tempoRounds++);
+                      }
+                    : null,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -454,6 +599,13 @@ class _SegmentEditorDialogState extends State<SegmentEditorDialog> {
           duration: _restDuration,
           rounds: _rounds,
         ),
+      SegmentType.tempo => TempoSegment(
+          id: id,
+          tempo: _tempo,
+          tempoRounds: _tempoRounds,
+          roundDuration: _tempoRoundDuration,
+          rounds: _rounds,
+        ),
     };
 
     Navigator.pop(context, segment);
@@ -466,6 +618,7 @@ class _SegmentEditorDialogState extends State<SegmentEditorDialog> {
       SegmentType.emom => AppColors.emom,
       SegmentType.tabata => AppColors.tabata,
       SegmentType.rest => AppColors.rest,
+      SegmentType.tempo => AppColors.tempo,
     };
   }
 
@@ -476,6 +629,7 @@ class _SegmentEditorDialogState extends State<SegmentEditorDialog> {
       SegmentType.emom => Icons.schedule,
       SegmentType.tabata => Icons.fitness_center,
       SegmentType.rest => Icons.pause_circle_outline,
+      SegmentType.tempo => Icons.speed,
     };
   }
 }

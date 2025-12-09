@@ -6,6 +6,7 @@ enum SegmentType {
   emom,
   tabata,
   rest,
+  tempo,
 }
 
 sealed class WorkoutSegment extends Equatable {
@@ -32,6 +33,7 @@ sealed class WorkoutSegment extends Equatable {
       SegmentType.emom => EmomSegment.fromJson(json),
       SegmentType.tabata => TabataSegment.fromJson(json),
       SegmentType.rest => RestSegment.fromJson(json),
+      SegmentType.tempo => TempoSegment.fromJson(json),
     };
   }
 
@@ -322,4 +324,75 @@ class RestSegment extends WorkoutSegment {
 
   @override
   List<Object?> get props => [...super.props, duration];
+}
+
+class TempoSegment extends WorkoutSegment {
+  final List<int> tempo;
+  final int tempoRounds;
+  final Duration roundDuration;
+
+  const TempoSegment({
+    required super.id,
+    super.name,
+    super.rounds,
+    required this.tempo,
+    required this.tempoRounds,
+    required this.roundDuration,
+  });
+
+  @override
+  SegmentType get type => SegmentType.tempo;
+
+  Duration get repDuration {
+    return Duration(
+      seconds: tempo.fold(0, (sum, t) => sum + (t == 0 ? 1 : t)),
+    );
+  }
+
+  @override
+  Duration get totalDuration => roundDuration * tempoRounds * rounds;
+
+  String get tempoString => tempo.join('-');
+
+  @override
+  Map<String, dynamic> toJson() => {
+        'type': type.name,
+        'id': id,
+        'name': name,
+        'rounds': rounds,
+        'tempo': tempo,
+        'tempoRounds': tempoRounds,
+        'roundDurationSeconds': roundDuration.inSeconds,
+      };
+
+  factory TempoSegment.fromJson(Map<String, dynamic> json) => TempoSegment(
+        id: json['id'] as String,
+        name: json['name'] as String?,
+        rounds: json['rounds'] as int? ?? 1,
+        tempo: (json['tempo'] as List).cast<int>(),
+        tempoRounds: json['tempoRounds'] as int,
+        roundDuration: Duration(seconds: json['roundDurationSeconds'] as int),
+      );
+
+  @override
+  TempoSegment copyWith({
+    String? id,
+    String? name,
+    int? rounds,
+    List<int>? tempo,
+    int? tempoRounds,
+    Duration? roundDuration,
+  }) =>
+      TempoSegment(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        rounds: rounds ?? this.rounds,
+        tempo: tempo ?? this.tempo,
+        tempoRounds: tempoRounds ?? this.tempoRounds,
+        roundDuration: roundDuration ?? this.roundDuration,
+      );
+
+  @override
+  List<Object?> get props =>
+      [...super.props, tempo, tempoRounds, roundDuration];
 }

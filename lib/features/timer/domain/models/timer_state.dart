@@ -51,6 +51,9 @@ class TimerState extends Equatable {
   final DateTime? pausedAt;
   final List<Duration> roundTimes;
   final List<LapTime> lapTimes;
+  final int currentTempoRound;
+  final int currentTempoPhase;
+  final int currentTempoCount;
 
   const TimerState({
     required this.workout,
@@ -70,6 +73,9 @@ class TimerState extends Equatable {
     this.pausedAt,
     this.roundTimes = const [],
     this.lapTimes = const [],
+    this.currentTempoRound = 1,
+    this.currentTempoPhase = 0,
+    this.currentTempoCount = 0,
   });
 
   WorkoutSegment? get currentSegment {
@@ -116,12 +122,16 @@ class TimerState extends Equatable {
           ? (segment as TabataSegment).workDuration.inSeconds
           : (segment as TabataSegment).restDuration.inSeconds,
       RestSegment(:final duration) => duration.inSeconds,
+      TempoSegment() => (segment as TempoSegment).repDuration.inSeconds,
     };
 
     if (total == 0) return 1.0;
 
     final result = switch (segment) {
       ForTimeSegment() => elapsedTime.inSeconds / total,
+      TempoSegment() => remainingTime.inSeconds > 0
+          ? 1 - (remainingTime.inSeconds / total)
+          : 0.0,
       _ => 1 - (remainingTime.inSeconds / total),
     };
 
@@ -146,6 +156,9 @@ class TimerState extends Equatable {
     DateTime? pausedAt,
     List<Duration>? roundTimes,
     List<LapTime>? lapTimes,
+    int? currentTempoRound,
+    int? currentTempoPhase,
+    int? currentTempoCount,
   }) {
     return TimerState(
       workout: workout ?? this.workout,
@@ -165,6 +178,9 @@ class TimerState extends Equatable {
       pausedAt: pausedAt ?? this.pausedAt,
       roundTimes: roundTimes ?? this.roundTimes,
       lapTimes: lapTimes ?? this.lapTimes,
+      currentTempoRound: currentTempoRound ?? this.currentTempoRound,
+      currentTempoPhase: currentTempoPhase ?? this.currentTempoPhase,
+      currentTempoCount: currentTempoCount ?? this.currentTempoCount,
     );
   }
 
@@ -187,5 +203,8 @@ class TimerState extends Equatable {
         pausedAt,
         roundTimes,
         lapTimes,
+        currentTempoRound,
+        currentTempoPhase,
+        currentTempoCount,
       ];
 }
