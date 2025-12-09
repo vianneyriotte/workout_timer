@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="240" fill="#1E1E2E"/>
+
+  <!-- Timer outer ring -->
+  <circle cx="256" cy="200" r="120" fill="none" stroke="#FF6B35" stroke-width="16"/>
+
+  <!-- Timer inner circle -->
+  <circle cx="256" cy="200" r="95" fill="#2A2A3E"/>
+
+  <!-- Timer tick marks -->
+  <g stroke="#FF6B35" stroke-width="4">
+    <line x1="256" y1="90" x2="256" y2="110"/>
+    <line x1="256" y1="290" x2="256" y2="310"/>
+    <line x1="146" y1="200" x2="166" y2="200"/>
+    <line x1="346" y1="200" x2="366" y2="200"/>
+  </g>
+
+  <!-- Timer hand -->
+  <line x1="256" y1="200" x2="256" y2="130" stroke="#FF6B35" stroke-width="6" stroke-linecap="round"/>
+  <line x1="256" y1="200" x2="300" y2="220" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Timer center dot -->
+  <circle cx="256" cy="200" r="10" fill="#FF6B35"/>
+
+  <!-- Timer top button -->
+  <rect x="246" y="60" width="20" height="20" rx="4" fill="#FF6B35"/>
+
+  <!-- Olympic Barbell -->
+  <!-- Center bar -->
+  <rect x="80" y="390" width="352" height="16" rx="8" fill="#CCCCCC"/>
+
+  <!-- Left weight plates -->
+  <rect x="60" y="360" width="30" height="76" rx="4" fill="#FF6B35"/>
+  <rect x="95" y="370" width="20" height="56" rx="3" fill="#FF8C5A"/>
+
+  <!-- Right weight plates -->
+  <rect x="422" y="360" width="30" height="76" rx="4" fill="#FF6B35"/>
+  <rect x="397" y="370" width="20" height="56" rx="3" fill="#FF8C5A"/>
+
+  <!-- Barbell collars -->
+  <rect x="120" y="382" width="15" height="32" rx="2" fill="#888888"/>
+  <rect x="377" y="382" width="15" height="32" rx="2" fill="#888888"/>
+</svg>
