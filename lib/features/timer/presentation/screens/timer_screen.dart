@@ -127,6 +127,10 @@ class _PortraitLayout extends StatelessWidget {
     required this.onClose,
   });
 
+  bool get _showAddRound =>
+      timerState.currentSegment is AmrapSegment &&
+      timerState.status == TimerStatus.running;
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -134,7 +138,11 @@ class _PortraitLayout extends StatelessWidget {
         _buildHeader(context),
         const Spacer(),
         SegmentInfo(timerState: timerState),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
+        if (_showAddRound) ...[
+          AddRoundButton(onPressed: timerNotifier.addRound),
+          const SizedBox(height: 24),
+        ],
         TimerDisplay(
           time: _getDisplayTime(),
           phase: timerState.phase,
@@ -147,10 +155,7 @@ class _PortraitLayout extends StatelessWidget {
           onStart: timerNotifier.start,
           onPause: timerNotifier.pause,
           onReset: timerNotifier.reset,
-          onAddRound: timerNotifier.addRound,
           onComplete: timerNotifier.completeForTime,
-          showAddRound: timerState.currentSegment is AmrapSegment &&
-              timerState.status == TimerStatus.running,
           showComplete: timerState.currentSegment is ForTimeSegment &&
               timerState.status == TimerStatus.running,
         ),
@@ -291,6 +296,10 @@ class _LandscapeLayout extends StatelessWidget {
     required this.onClose,
   });
 
+  bool get _showAddRound =>
+      timerState.currentSegment is AmrapSegment &&
+      timerState.status == TimerStatus.running;
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -301,7 +310,11 @@ class _LandscapeLayout extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SegmentInfo(timerState: timerState),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+              if (_showAddRound) ...[
+                AddRoundButton(onPressed: timerNotifier.addRound),
+                const SizedBox(height: 16),
+              ],
               TimerDisplay(
                 time: _getDisplayTime(),
                 phase: timerState.phase,
@@ -326,10 +339,7 @@ class _LandscapeLayout extends StatelessWidget {
                 onStart: timerNotifier.start,
                 onPause: timerNotifier.pause,
                 onReset: timerNotifier.reset,
-                onAddRound: timerNotifier.addRound,
                 onComplete: timerNotifier.completeForTime,
-                showAddRound: timerState.currentSegment is AmrapSegment &&
-                    timerState.status == TimerStatus.running,
                 showComplete: timerState.currentSegment is ForTimeSegment &&
                     timerState.status == TimerStatus.running,
               ),

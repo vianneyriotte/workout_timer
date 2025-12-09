@@ -9,9 +9,7 @@ class TimerControls extends StatelessWidget {
   final VoidCallback onStart;
   final VoidCallback onPause;
   final VoidCallback onReset;
-  final VoidCallback? onAddRound;
   final VoidCallback? onComplete;
-  final bool showAddRound;
   final bool showComplete;
 
   const TimerControls({
@@ -20,9 +18,7 @@ class TimerControls extends StatelessWidget {
     required this.onStart,
     required this.onPause,
     required this.onReset,
-    this.onAddRound,
     this.onComplete,
-    this.showAddRound = false,
     this.showComplete = false,
   });
 
@@ -50,15 +46,7 @@ class TimerControls extends StatelessWidget {
         ),
         if (showSideButtons) ...[
           const SizedBox(width: 24),
-          if (showAddRound && onAddRound != null)
-            _ControlButton(
-              icon: Icons.add,
-              label: '+1',
-              onPressed: onAddRound!,
-              color: AppColors.primary,
-              size: 48,
-            )
-          else if (showComplete && onComplete != null)
+          if (showComplete && onComplete != null)
             _ControlButton(
               icon: Icons.check,
               onPressed: onComplete!,
@@ -69,6 +57,48 @@ class TimerControls extends StatelessWidget {
             const SizedBox(width: 48),
         ],
       ],
+    );
+  }
+}
+
+class AddRoundButton extends StatelessWidget {
+  final VoidCallback onPressed;
+
+  const AddRoundButton({
+    super.key,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        onPressed();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.primary, width: 2),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.add, color: AppColors.primary, size: 24),
+            SizedBox(width: 8),
+            Text(
+              '+1 Round',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
@@ -25,6 +26,9 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
   int _workoutRounds = 1;
   Duration _countdownDuration = const Duration(seconds: 10);
 
+  bool _isSelectionMode = false;
+  final Set<String> _selectedSegmentIds = {};
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -35,32 +39,61 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Workout Builder'),
+        title: Text(_isSelectionMode ? 'Select Segments' : 'Workout Builder'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          icon: Icon(_isSelectionMode ? Icons.close : Icons.arrow_back),
+          onPressed: _isSelectionMode ? _exitSelectionMode : () => context.pop(),
         ),
-        actions: [
-          TextButton.icon(
-            onPressed: _showAddSegmentDialog,
-            icon: const Icon(Icons.add, color: AppColors.primary),
-            label: const Text(
-              'Add Segment',
-              style: TextStyle(color: AppColors.primary),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: _showWorkoutSettings,
-          ),
-        ],
+        actions: _isSelectionMode
+            ? [
+                if (_selectedSegmentIds.length >= 2)
+                  TextButton.icon(
+                    onPressed: _createBlockFromSelection,
+                    icon: const Icon(Icons.group_work, color: AppColors.primary),
+                    label: const Text(
+                      'Create Block',
+                      style: TextStyle(color: AppColors.primary),
+                    ),
+                  ),
+              ]
+            : [
+                TextButton.icon(
+                  onPressed: _showAddSegmentDialog,
+                  icon: const Icon(Icons.add, color: AppColors.primary),
+                  label: const Text(
+                    'Add Segment',
+                    style: TextStyle(color: AppColors.primary),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.settings),
+                  onPressed: _showWorkoutSettings,
+                ),
+              ],
       ),
       body: Column(
         children: [
+          if (_isSelectionMode)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: AppColors.primary.withOpacity(0.1),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Select segments to group into a block (${_selectedSegmentIds.length} selected)',
+                      style: TextStyle(color: AppColors.primary, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Expanded(
             child: _groups.isEmpty ? _buildEmptyState() : _buildSegmentList(),
           ),
-          _buildBottomBar(),
+          if (!_isSelectionMode) _buildBottomBar(),
         ],
       ),
     );
@@ -85,7 +118,7 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Tap "Add Segment" in the top bar to build your workout',
+            'Tap "Add Segment" to build your workout',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.textMuted,
                 ),
@@ -100,6 +133,7 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
       padding: const EdgeInsets.only(bottom: 100, top: 16),
       itemCount: _groups.length,
       onReorder: (oldIndex, newIndex) {
+        HapticFeedback.mediumImpact();
         setState(() {
           if (newIndex > oldIndex) newIndex--;
           final group = _groups.removeAt(oldIndex);
@@ -112,6 +146,10 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
           key: ValueKey(group.id),
           group: group,
           groupIndex: groupIndex,
+          isSelectionMode: _isSelectionMode,
+          selectedSegmentIds: _selectedSegmentIds,
+          onSegmentSelected: _toggleSegmentSelection,
+          onLongPress: _enterSelectionMode,
           onEdit: () => _editGroup(groupIndex),
           onDelete: () => _deleteGroup(groupIndex),
           onAddSegment: () => _addSegmentToGroup(groupIndex),
@@ -120,6 +158,9 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
           onDeleteSegment: (segmentIndex) =>
               _deleteSegment(groupIndex, segmentIndex),
           onRoundsChanged: (rounds) => _updateGroupRounds(groupIndex, rounds),
+          onDissolveGroup: () => _dissolveGroup(groupIndex),
+          onReorderSegments: (oldIndex, newIndex) =>
+              _reorderSegmentsInGroup(groupIndex, oldIndex, newIndex),
         );
       },
     );
@@ -203,6 +244,120 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
     return total * _workoutRounds;
   }
 
+  void _enterSelectionMode(String segmentId) {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _isSelectionMode = true;
+      _selectedSegmentIds.add(segmentId);
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedSegmentIds.clear();
+    });
+  }
+
+  void _toggleSegmentSelection(String segmentId) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      if (_selectedSegmentIds.contains(segmentId)) {
+        _selectedSegmentIds.remove(segmentId);
+      } else {
+        _selectedSegmentIds.add(segmentId);
+      }
+    });
+  }
+
+  void _createBlockFromSelection() async {
+    final selectedSegments = <WorkoutSegment>[];
+    final groupsToRemove = <int>[];
+
+    for (var groupIndex = 0; groupIndex < _groups.length; groupIndex++) {
+      final group = _groups[groupIndex];
+      final segmentsToKeep = <WorkoutSegment>[];
+
+      for (final segment in group.segments) {
+        if (_selectedSegmentIds.contains(segment.id)) {
+          selectedSegments.add(segment);
+        } else {
+          segmentsToKeep.add(segment);
+        }
+      }
+
+      if (segmentsToKeep.isEmpty) {
+        groupsToRemove.add(groupIndex);
+      } else if (segmentsToKeep.length != group.segments.length) {
+        _groups[groupIndex] = group.copyWith(segments: segmentsToKeep);
+      }
+    }
+
+    for (var i = groupsToRemove.length - 1; i >= 0; i--) {
+      _groups.removeAt(groupsToRemove[i]);
+    }
+
+    if (selectedSegments.isEmpty) {
+      _exitSelectionMode();
+      return;
+    }
+
+    final rounds = await showDialog<int>(
+      context: context,
+      builder: (context) => _BlockRoundsDialog(
+        segmentCount: selectedSegments.length,
+      ),
+    );
+
+    if (rounds != null) {
+      HapticFeedback.mediumImpact();
+      setState(() {
+        _groups.add(SegmentGroup(
+          id: _uuid.v4(),
+          segments: selectedSegments,
+          rounds: rounds,
+        ));
+      });
+    } else {
+      for (final segment in selectedSegments) {
+        _groups.add(SegmentGroup(
+          id: _uuid.v4(),
+          segments: [segment],
+        ));
+      }
+    }
+
+    _exitSelectionMode();
+  }
+
+  void _dissolveGroup(int groupIndex) {
+    HapticFeedback.lightImpact();
+    setState(() {
+      final group = _groups.removeAt(groupIndex);
+      for (var i = 0; i < group.segments.length; i++) {
+        _groups.insert(
+          groupIndex + i,
+          SegmentGroup(
+            id: _uuid.v4(),
+            segments: [group.segments[i]],
+          ),
+        );
+      }
+    });
+  }
+
+  void _reorderSegmentsInGroup(int groupIndex, int oldIndex, int newIndex) {
+    HapticFeedback.lightImpact();
+    setState(() {
+      final group = _groups[groupIndex];
+      final segments = List<WorkoutSegment>.from(group.segments);
+      if (newIndex > oldIndex) newIndex--;
+      final segment = segments.removeAt(oldIndex);
+      segments.insert(newIndex, segment);
+      _groups[groupIndex] = group.copyWith(segments: segments);
+    });
+  }
+
   void _showAddSegmentDialog() async {
     final segment = await showDialog<WorkoutSegment>(
       context: context,
@@ -210,6 +365,7 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
     );
 
     if (segment != null) {
+      HapticFeedback.lightImpact();
       setState(() {
         _groups.add(SegmentGroup(
           id: _uuid.v4(),
@@ -226,6 +382,7 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
     );
 
     if (segment != null) {
+      HapticFeedback.lightImpact();
       setState(() {
         final group = _groups[groupIndex];
         _groups[groupIndex] = group.copyWith(
@@ -235,14 +392,43 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
     }
   }
 
-  void _editGroup(int groupIndex) {
-    // Group editing is handled via the rounds counter in the card
-  }
+  void _editGroup(int groupIndex) {}
 
-  void _deleteGroup(int groupIndex) {
-    setState(() {
-      _groups.removeAt(groupIndex);
-    });
+  void _deleteGroup(int groupIndex) async {
+    final group = _groups[groupIndex];
+    final isBlock = group.segments.length > 1;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(isBlock ? 'Delete Block?' : 'Delete Segment?'),
+        content: Text(
+          isBlock
+              ? 'This will delete the block with ${group.segments.length} segments.'
+              : 'This will delete this segment.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              Navigator.pop(context, true);
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() {
+        _groups.removeAt(groupIndex);
+      });
+    }
   }
 
   void _editSegment(int groupIndex, int segmentIndex) async {
@@ -262,21 +448,50 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
     }
   }
 
-  void _deleteSegment(int groupIndex, int segmentIndex) {
-    setState(() {
-      final group = _groups[groupIndex];
-      final segments = List<WorkoutSegment>.from(group.segments);
-      segments.removeAt(segmentIndex);
+  void _deleteSegment(int groupIndex, int segmentIndex) async {
+    final segment = _groups[groupIndex].segments[segmentIndex];
 
-      if (segments.isEmpty) {
-        _groups.removeAt(groupIndex);
-      } else {
-        _groups[groupIndex] = group.copyWith(segments: segments);
-      }
-    });
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Segment?'),
+        content: Text(
+          'Delete ${segment.type.name.toUpperCase()} segment?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              Navigator.pop(context, true);
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() {
+        final group = _groups[groupIndex];
+        final segments = List<WorkoutSegment>.from(group.segments);
+        segments.removeAt(segmentIndex);
+
+        if (segments.isEmpty) {
+          _groups.removeAt(groupIndex);
+        } else {
+          _groups[groupIndex] = group.copyWith(segments: segments);
+        }
+      });
+    }
   }
 
   void _updateGroupRounds(int groupIndex, int rounds) {
+    HapticFeedback.lightImpact();
     setState(() {
       _groups[groupIndex] = _groups[groupIndex].copyWith(rounds: rounds);
     });
@@ -312,11 +527,13 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
   }
 
   void _startWorkout() {
+    HapticFeedback.mediumImpact();
     final workout = _createWorkout();
     context.push('/timer', extra: workout);
   }
 
   void _saveWorkout() {
+    HapticFeedback.lightImpact();
     final workout = _createWorkout();
     ref.read(presetsProvider.notifier).addPreset(workout);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -331,57 +548,117 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
 class _GroupCard extends StatelessWidget {
   final SegmentGroup group;
   final int groupIndex;
+  final bool isSelectionMode;
+  final Set<String> selectedSegmentIds;
+  final Function(String) onSegmentSelected;
+  final Function(String) onLongPress;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onAddSegment;
   final Function(int) onEditSegment;
   final Function(int) onDeleteSegment;
   final Function(int) onRoundsChanged;
+  final VoidCallback onDissolveGroup;
+  final Function(int, int) onReorderSegments;
 
   const _GroupCard({
     super.key,
     required this.group,
     required this.groupIndex,
+    required this.isSelectionMode,
+    required this.selectedSegmentIds,
+    required this.onSegmentSelected,
+    required this.onLongPress,
     required this.onEdit,
     required this.onDelete,
     required this.onAddSegment,
     required this.onEditSegment,
     required this.onDeleteSegment,
     required this.onRoundsChanged,
+    required this.onDissolveGroup,
+    required this.onReorderSegments,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isBlock = group.segments.length > 1;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: group.segments.length > 1
-            ? Border.all(color: AppColors.custom.withOpacity(0.3))
+        border: isBlock
+            ? Border.all(color: AppColors.custom.withOpacity(0.5), width: 2)
             : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (group.segments.length > 1) _buildGroupHeader(context),
-          ...group.segments.asMap().entries.map((entry) {
-            return _SegmentTile(
-              segment: entry.value,
-              onEdit: () => onEditSegment(entry.key),
-              onDelete: () => onDeleteSegment(entry.key),
-            );
-          }),
-          if (group.segments.length > 1)
+          if (isBlock) _buildGroupHeader(context),
+          if (isBlock)
+            ReorderableListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: group.segments.length,
+              onReorder: onReorderSegments,
+              itemBuilder: (context, index) {
+                final segment = group.segments[index];
+                return _SegmentTile(
+                  key: ValueKey(segment.id),
+                  segment: segment,
+                  isSelectionMode: isSelectionMode,
+                  isSelected: selectedSegmentIds.contains(segment.id),
+                  onTap: isSelectionMode
+                      ? () => onSegmentSelected(segment.id)
+                      : () => onEditSegment(index),
+                  onLongPress: () => onLongPress(segment.id),
+                  onEdit: () => onEditSegment(index),
+                  onDelete: () => onDeleteSegment(index),
+                  showActions: !isSelectionMode,
+                );
+              },
+            )
+          else
+            ...group.segments.asMap().entries.map((entry) {
+              final segment = entry.value;
+              return _SegmentTile(
+                key: ValueKey(segment.id),
+                segment: segment,
+                isSelectionMode: isSelectionMode,
+                isSelected: selectedSegmentIds.contains(segment.id),
+                onTap: isSelectionMode
+                    ? () => onSegmentSelected(segment.id)
+                    : () => onEditSegment(entry.key),
+                onLongPress: () => onLongPress(segment.id),
+                onEdit: () => onEditSegment(entry.key),
+                onDelete: () => onDeleteSegment(entry.key),
+                showActions: !isSelectionMode,
+              );
+            }),
+          if (isBlock && !isSelectionMode)
             Padding(
-              padding: const EdgeInsets.all(8),
-              child: TextButton.icon(
-                onPressed: onAddSegment,
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add to group'),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.textSecondary,
-                ),
+              padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8),
+              child: Row(
+                children: [
+                  TextButton.icon(
+                    onPressed: onAddSegment,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Add'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.textSecondary,
+                    ),
+                  ),
+                  const Spacer(),
+                  TextButton.icon(
+                    onPressed: onDissolveGroup,
+                    icon: const Icon(Icons.call_split, size: 18),
+                    label: const Text('Dissolve'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
             ),
         ],
@@ -400,18 +677,25 @@ class _GroupCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: AppColors.custom.withOpacity(0.2),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Text(
-              'GROUP ${groupIndex + 1}',
-              style: const TextStyle(
-                color: AppColors.custom,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.group_work, size: 16, color: AppColors.custom),
+                const SizedBox(width: 6),
+                Text(
+                  'BLOCK ${groupIndex + 1}',
+                  style: const TextStyle(
+                    color: AppColors.custom,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
           ),
           const Spacer(),
@@ -424,12 +708,17 @@ class _GroupCard extends StatelessWidget {
             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Text(
               '${group.rounds}x',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 color: AppColors.primary,
+                fontSize: 16,
               ),
             ),
           ),
@@ -455,13 +744,24 @@ class _GroupCard extends StatelessWidget {
 
 class _SegmentTile extends StatelessWidget {
   final WorkoutSegment segment;
+  final bool isSelectionMode;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final bool showActions;
 
   const _SegmentTile({
+    super.key,
     required this.segment,
+    required this.isSelectionMode,
+    required this.isSelected,
+    required this.onTap,
+    required this.onLongPress,
     required this.onEdit,
     required this.onDelete,
+    required this.showActions,
   });
 
   Color get _color => switch (segment.type) {
@@ -474,58 +774,92 @@ class _SegmentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Container(
-        width: 40,
-        height: 40,
+    return InkWell(
+      onTap: onTap,
+      onLongPress: isSelectionMode ? null : onLongPress,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: _color.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(8),
+          color: isSelected ? AppColors.primary.withOpacity(0.1) : null,
         ),
-        child: Center(
-          child: Icon(_getIcon(), color: _color, size: 20),
-        ),
-      ),
-      title: Text(
-        segment.type.name.toUpperCase(),
-        style: TextStyle(
-          color: _color,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      subtitle: Text(
-        _getSubtitle(),
-        style: const TextStyle(color: AppColors.textSecondary),
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (segment.rounds > 1)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '${segment.rounds}x',
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
+        child: Row(
+          children: [
+            if (isSelectionMode)
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: Icon(
+                  isSelected ? Icons.check_circle : Icons.circle_outlined,
+                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
                 ),
               ),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: _color.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Icon(_getIcon(), color: _color, size: 20),
+              ),
             ),
-          IconButton(
-            icon: const Icon(Icons.edit_outlined, size: 18),
-            onPressed: onEdit,
-            color: AppColors.textSecondary,
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, size: 18),
-            onPressed: onDelete,
-            color: AppColors.error,
-          ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    segment.type.name.toUpperCase(),
+                    style: TextStyle(
+                      color: _color,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    _getSubtitle(),
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (segment.rounds > 1)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${segment.rounds}x',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            if (showActions) ...[
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                onPressed: onEdit,
+                color: AppColors.textSecondary,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 18),
+                onPressed: onDelete,
+                color: AppColors.error,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -582,6 +916,87 @@ class _InfoChip extends StatelessWidget {
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: AppColors.textSecondary,
               ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BlockRoundsDialog extends StatefulWidget {
+  final int segmentCount;
+
+  const _BlockRoundsDialog({required this.segmentCount});
+
+  @override
+  State<_BlockRoundsDialog> createState() => _BlockRoundsDialogState();
+}
+
+class _BlockRoundsDialogState extends State<_BlockRoundsDialog> {
+  int _rounds = 1;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Create Block'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Group ${widget.segmentCount} segments into a block',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('Rounds:'),
+              const SizedBox(width: 16),
+              IconButton(
+                icon: const Icon(Icons.remove),
+                onPressed: _rounds > 1
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _rounds--);
+                      }
+                    : null,
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '$_rounds',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  setState(() => _rounds++);
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            HapticFeedback.mediumImpact();
+            Navigator.pop(context, _rounds);
+          },
+          child: const Text('Create'),
         ),
       ],
     );
@@ -664,6 +1079,7 @@ class _WorkoutSettingsSheetState extends State<_WorkoutSettingsSheet> {
                 icon: const Icon(Icons.remove),
                 onPressed: _rounds > 1
                     ? () {
+                        HapticFeedback.lightImpact();
                         setState(() => _rounds--);
                         widget.onRoundsChanged(_rounds);
                       }
@@ -679,6 +1095,7 @@ class _WorkoutSettingsSheetState extends State<_WorkoutSettingsSheet> {
               IconButton(
                 icon: const Icon(Icons.add),
                 onPressed: () {
+                  HapticFeedback.lightImpact();
                   setState(() => _rounds++);
                   widget.onRoundsChanged(_rounds);
                 },
@@ -701,6 +1118,7 @@ class _WorkoutSettingsSheetState extends State<_WorkoutSettingsSheet> {
                     .toList(),
                 onChanged: (value) {
                   if (value != null) {
+                    HapticFeedback.selectionClick();
                     setState(() => _countdownSeconds = value);
                     widget.onCountdownChanged(Duration(seconds: value));
                   }

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Timer circle -->
+  <circle cx="256" cy="200" r="140" fill="none" stroke="#FF6B35" stroke-width="16"/>
+
+  <!-- Timer inner circle -->
+  <circle cx="256" cy="200" r="100" fill="#2d2d44"/>
+
+  <!-- Hour marks -->
+  <line x1="256" y1="70" x2="256" y2="90" stroke="#FF6B35" stroke-width="6" stroke-linecap="round"/>
+  <line x1="256" y1="310" x2="256" y2="330" stroke="#FF6B35" stroke-width="6" stroke-linecap="round"/>
+  <line x1="126" y1="200" x2="146" y2="200" stroke="#FF6B35" stroke-width="6" stroke-linecap="round"/>
+  <line x1="366" y1="200" x2="386" y2="200" stroke="#FF6B35" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Timer button on top -->
+  <rect x="244" y="40" width="24" height="20" rx="4" fill="#FF6B35"/>
+  <circle cx="256" cy="35" r="10" fill="#FF6B35"/>
+
+  <!-- Clock hands -->
+  <line x1="256" y1="200" x2="256" y2="130" stroke="#FF6B35" stroke-width="8" stroke-linecap="round"/>
+  <line x1="256" y1="200" x2="310" y2="220" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Center dot -->
+  <circle cx="256" cy="200" r="12" fill="#FF6B35"/>
+
+  <!-- Barbell -->
+  <!-- Left weight -->
+  <rect x="60" y="380" width="50" height="80" rx="8" fill="#FF6B35"/>
+  <rect x="80" y="370" width="30" height="100" rx="4" fill="#FF6B35"/>
+
+  <!-- Right weight -->
+  <rect x="402" y="380" width="50" height="80" rx="8" fill="#FF6B35"/>
+  <rect x="402" y="370" width="30" height="100" rx="4" fill="#FF6B35"/>
+
+  <!-- Bar -->
+  <rect x="110" y="405" width="292" height="30" rx="6" fill="#9e9e9e"/>
+
+  <!-- Bar grips -->
+  <rect x="90" y="410" width="30" height="20" rx="4" fill="#757575"/>
+  <rect x="392" y="410" width="30" height="20" rx="4" fill="#757575"/>
+</svg>
