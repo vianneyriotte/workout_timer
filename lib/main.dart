@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'app.dart';
+import 'shared/services/audio_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,9 +25,17 @@ void main() async {
 
   await WakelockPlus.enable();
 
+  // Initialize audio service early to configure audio session
+  // This ensures sounds don't interrupt background music
+  final audioService = AudioService();
+  await audioService.init();
+
   runApp(
-    const ProviderScope(
-      child: WorkoutTimerApp(),
+    ProviderScope(
+      overrides: [
+        audioServiceProvider.overrideWithValue(audioService),
+      ],
+      child: const WorkoutTimerApp(),
     ),
   );
 }

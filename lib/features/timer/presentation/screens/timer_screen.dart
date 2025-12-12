@@ -131,6 +131,10 @@ class _PortraitLayout extends StatelessWidget {
       timerState.currentSegment is AmrapSegment &&
       timerState.status == TimerStatus.running;
 
+  bool get _showAddRep =>
+      timerState.currentSegment is ForTimeSegment &&
+      timerState.status == TimerStatus.running;
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -141,6 +145,14 @@ class _PortraitLayout extends StatelessWidget {
         const SizedBox(height: 16),
         if (_showAddRound) ...[
           AddRoundButton(onPressed: timerNotifier.addRound),
+          const SizedBox(height: 24),
+        ],
+        if (_showAddRep) ...[
+          AddRoundButton(
+            onPressed: timerNotifier.addRep,
+            label: '+1 Rep',
+            count: timerState.forTimeReps > 0 ? timerState.forTimeReps : null,
+          ),
           const SizedBox(height: 24),
         ],
         TimerDisplay(
@@ -225,6 +237,13 @@ class _PortraitLayout extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyLarge,
             ),
           ],
+          if (timerState.forTimeReps > 0) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Reps: ${timerState.forTimeReps}',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ],
           if (timerState.lapTimes.isNotEmpty) ...[
             const SizedBox(height: 16),
             Container(
@@ -300,6 +319,10 @@ class _LandscapeLayout extends StatelessWidget {
       timerState.currentSegment is AmrapSegment &&
       timerState.status == TimerStatus.running;
 
+  bool get _showAddRep =>
+      timerState.currentSegment is ForTimeSegment &&
+      timerState.status == TimerStatus.running;
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -313,6 +336,14 @@ class _LandscapeLayout extends StatelessWidget {
               const SizedBox(height: 8),
               if (_showAddRound) ...[
                 AddRoundButton(onPressed: timerNotifier.addRound),
+                const SizedBox(height: 16),
+              ],
+              if (_showAddRep) ...[
+                AddRoundButton(
+                  onPressed: timerNotifier.addRep,
+                  label: '+1 Rep',
+                  count: timerState.forTimeReps > 0 ? timerState.forTimeReps : null,
+                ),
                 const SizedBox(height: 16),
               ],
               TimerDisplay(

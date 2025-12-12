@@ -17,11 +17,66 @@ class AudioService {
   final FlutterTts _tts = FlutterTts();
   bool _enabled = true;
   bool _ttsInitialized = false;
+  bool _audioSessionConfigured = false;
 
   bool get enabled => _enabled;
 
   set enabled(bool value) {
     _enabled = value;
+  }
+
+  /// Initialize the audio service. Call this early in app startup.
+  Future<void> init() async {
+    await _configureAudioSession();
+  }
+
+  Future<void> _configureAudioSession() async {
+    if (_audioSessionConfigured) return;
+
+    // Set global audio context to mix with other audio
+    AudioPlayer.global.setAudioContext(
+      AudioContext(
+        iOS: AudioContextIOS(
+          category: AVAudioSessionCategory.ambient,
+          options: const {
+            AVAudioSessionOptions.mixWithOthers,
+          },
+        ),
+        android: const AudioContextAndroid(
+          isSpeakerphoneOn: false,
+          audioMode: AndroidAudioMode.normal,
+          stayAwake: false,
+          contentType: AndroidContentType.sonification,
+          usageType: AndroidUsageType.notification,
+          audioFocus: AndroidAudioFocus.none,
+        ),
+      ),
+    );
+
+    // Also set on player instance
+    await _player.setAudioContext(
+      AudioContext(
+        iOS: AudioContextIOS(
+          category: AVAudioSessionCategory.ambient,
+          options: const {
+            AVAudioSessionOptions.mixWithOthers,
+          },
+        ),
+        android: const AudioContextAndroid(
+          isSpeakerphoneOn: false,
+          audioMode: AndroidAudioMode.normal,
+          stayAwake: false,
+          contentType: AndroidContentType.sonification,
+          usageType: AndroidUsageType.notification,
+          audioFocus: AndroidAudioFocus.none,
+        ),
+      ),
+    );
+
+    // Set player to release mode to not hold audio focus
+    await _player.setReleaseMode(ReleaseMode.release);
+
+    _audioSessionConfigured = true;
   }
 
   Future<void> _initTts() async {
@@ -30,6 +85,16 @@ class AudioService {
     await _tts.setSpeechRate(0.5);
     await _tts.setVolume(1.0);
     await _tts.setPitch(1.0);
+    // Configure TTS to mix with other audio (iOS specific)
+    await _tts.setSharedInstance(true);
+    await _tts.setIosAudioCategory(
+      IosTextToSpeechAudioCategory.ambient,
+      [
+        IosTextToSpeechAudioCategoryOptions.mixWithOthers,
+        IosTextToSpeechAudioCategoryOptions.duckOthers,
+      ],
+      IosTextToSpeechAudioMode.defaultMode,
+    );
     _ttsInitialized = true;
   }
 
@@ -133,6 +198,7 @@ class AudioService {
     if (!_enabled) return;
 
     try {
+      await _configureAudioSession();
       await _player.stop();
       await _player.play(
         AssetSource(assetPath),

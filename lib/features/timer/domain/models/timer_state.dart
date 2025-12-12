@@ -54,6 +54,7 @@ class TimerState extends Equatable {
   final int currentTempoRound;
   final int currentTempoPhase;
   final int currentTempoCount;
+  final int forTimeReps;
 
   const TimerState({
     required this.workout,
@@ -76,6 +77,7 @@ class TimerState extends Equatable {
     this.currentTempoRound = 1,
     this.currentTempoPhase = 0,
     this.currentTempoCount = 0,
+    this.forTimeReps = 0,
   });
 
   WorkoutSegment? get currentSegment {
@@ -159,6 +161,7 @@ class TimerState extends Equatable {
     int? currentTempoRound,
     int? currentTempoPhase,
     int? currentTempoCount,
+    int? forTimeReps,
   }) {
     return TimerState(
       workout: workout ?? this.workout,
@@ -181,6 +184,7 @@ class TimerState extends Equatable {
       currentTempoRound: currentTempoRound ?? this.currentTempoRound,
       currentTempoPhase: currentTempoPhase ?? this.currentTempoPhase,
       currentTempoCount: currentTempoCount ?? this.currentTempoCount,
+      forTimeReps: forTimeReps ?? this.forTimeReps,
     );
   }
 
@@ -206,5 +210,6 @@ class TimerState extends Equatable {
         currentTempoRound,
         currentTempoPhase,
         currentTempoCount,
+        forTimeReps,
       ];
 }

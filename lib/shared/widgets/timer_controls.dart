@@ -63,10 +63,14 @@ class TimerControls extends StatelessWidget {
 
 class AddRoundButton extends StatelessWidget {
   final VoidCallback onPressed;
+  final String label;
+  final int? count;
 
   const AddRoundButton({
     super.key,
     required this.onPressed,
+    this.label = '+1 Round',
+    this.count,
   });
 
   @override
@@ -83,14 +87,14 @@ class AddRoundButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: AppColors.primary, width: 2),
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.add, color: AppColors.primary, size: 24),
-            SizedBox(width: 8),
+            const Icon(Icons.add, color: AppColors.primary, size: 24),
+            const SizedBox(width: 8),
             Text(
-              '+1 Round',
-              style: TextStyle(
+              count != null ? '$label ($count)' : label,
+              style: const TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.bold,
                 fontSize: 18,

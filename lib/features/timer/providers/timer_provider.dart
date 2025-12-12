@@ -454,6 +454,10 @@ class TimerNotifier extends StateNotifier<TimerState> {
     );
   }
 
+  void addRep() {
+    state = state.copyWith(forTimeReps: state.forTimeReps + 1);
+  }
+
   void completeForTime() {
     final segment = state.currentSegment;
     if (segment is! ForTimeSegment) return;
