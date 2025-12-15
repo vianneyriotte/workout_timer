@@ -88,15 +88,15 @@ class AudioService {
     await _tts.setSpeechRate(0.5);
     await _tts.setVolume(1.0);
     await _tts.setPitch(1.0);
-    // Configure TTS to mix with other audio (iOS specific)
+    // Configure TTS to play over music with ducking
     await _tts.setSharedInstance(true);
     await _tts.setIosAudioCategory(
-      IosTextToSpeechAudioCategory.ambient,
+      IosTextToSpeechAudioCategory.playback,
       [
         IosTextToSpeechAudioCategoryOptions.mixWithOthers,
         IosTextToSpeechAudioCategoryOptions.duckOthers,
       ],
-      IosTextToSpeechAudioMode.defaultMode,
+      IosTextToSpeechAudioMode.voicePrompt,
     );
     _ttsInitialized = true;
   }
