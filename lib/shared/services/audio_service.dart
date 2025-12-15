@@ -85,9 +85,9 @@ class AudioService {
   Future<void> _initTts() async {
     if (_ttsInitialized) return;
     await _tts.setLanguage('en-US');
-    await _tts.setSpeechRate(0.5);
+    await _tts.setSpeechRate(0.45);
     await _tts.setVolume(1.0);
-    await _tts.setPitch(1.0);
+    await _tts.setPitch(1.3);
     // Configure TTS to play over music with ducking
     await _tts.setSharedInstance(true);
     await _tts.setIosAudioCategory(
