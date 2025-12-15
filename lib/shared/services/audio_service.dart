@@ -10,6 +10,7 @@ enum SoundType {
   complete,
   rest,
   work,
+  tick,
 }
 
 class AudioService {
@@ -33,13 +34,14 @@ class AudioService {
   Future<void> _configureAudioSession() async {
     if (_audioSessionConfigured) return;
 
-    // Set global audio context to mix with other audio
+    // Set global audio context to mix with music and duck it
     AudioPlayer.global.setAudioContext(
       AudioContext(
         iOS: AudioContextIOS(
-          category: AVAudioSessionCategory.ambient,
+          category: AVAudioSessionCategory.playback,
           options: const {
             AVAudioSessionOptions.mixWithOthers,
+            AVAudioSessionOptions.duckOthers,
           },
         ),
         android: const AudioContextAndroid(
@@ -47,8 +49,8 @@ class AudioService {
           audioMode: AndroidAudioMode.normal,
           stayAwake: false,
           contentType: AndroidContentType.sonification,
-          usageType: AndroidUsageType.notification,
-          audioFocus: AndroidAudioFocus.none,
+          usageType: AndroidUsageType.alarm,
+          audioFocus: AndroidAudioFocus.gainTransientMayDuck,
         ),
       ),
     );
@@ -57,9 +59,10 @@ class AudioService {
     await _player.setAudioContext(
       AudioContext(
         iOS: AudioContextIOS(
-          category: AVAudioSessionCategory.ambient,
+          category: AVAudioSessionCategory.playback,
           options: const {
             AVAudioSessionOptions.mixWithOthers,
+            AVAudioSessionOptions.duckOthers,
           },
         ),
         android: const AudioContextAndroid(
@@ -67,8 +70,8 @@ class AudioService {
           audioMode: AndroidAudioMode.normal,
           stayAwake: false,
           contentType: AndroidContentType.sonification,
-          usageType: AndroidUsageType.notification,
-          audioFocus: AndroidAudioFocus.none,
+          usageType: AndroidUsageType.alarm,
+          audioFocus: AndroidAudioFocus.gainTransientMayDuck,
         ),
       ),
     );
@@ -154,13 +157,14 @@ class AudioService {
     if (!_enabled) return;
 
     final soundFile = switch (type) {
-      SoundType.countdown => 'audio/beep.mp3',
+      SoundType.countdown => 'audio/beep_long.mp3',
       SoundType.start => 'audio/beep_long.mp3',
-      SoundType.intervalChange => 'audio/beep.mp3',
-      SoundType.warning => 'audio/beep.mp3',
+      SoundType.intervalChange => 'audio/beep_long.mp3',
+      SoundType.warning => 'audio/beep_long.mp3',
       SoundType.complete => 'audio/beep_long.mp3',
-      SoundType.rest => 'audio/beep.mp3',
-      SoundType.work => 'audio/beep.mp3',
+      SoundType.rest => 'audio/beep_long.mp3',
+      SoundType.work => 'audio/beep_long.mp3',
+      SoundType.tick => 'audio/beep_low.mp3',
     };
 
     await _playAsset(soundFile);
@@ -192,6 +196,10 @@ class AudioService {
 
   Future<void> playWorkBeep() async {
     await playSound(SoundType.work);
+  }
+
+  Future<void> playTickBeep() async {
+    await playSound(SoundType.tick);
   }
 
   Future<void> _playAsset(String assetPath) async {
