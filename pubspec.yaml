@@ -19,7 +19,6 @@ dependencies:
 
   # Audio
   audioplayers: ^6.0.0
-  flutter_tts: ^4.0.2
 
   # Utils
   uuid: ^4.2.2
@@ -57,3 +56,4 @@ flutter:
 
   assets:
     - assets/audio/
+    - assets/audio/voice/

@@ -1,6 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 
 enum SoundType {
   countdown,
@@ -15,9 +14,7 @@ enum SoundType {
 
 class AudioService {
   final AudioPlayer _player = AudioPlayer();
-  final FlutterTts _tts = FlutterTts();
   bool _enabled = true;
-  bool _ttsInitialized = false;
   bool _audioSessionConfigured = false;
 
   bool get enabled => _enabled;
@@ -41,7 +38,6 @@ class AudioService {
           category: AVAudioSessionCategory.playback,
           options: const {
             AVAudioSessionOptions.mixWithOthers,
-            AVAudioSessionOptions.duckOthers,
           },
         ),
         android: const AudioContextAndroid(
@@ -50,7 +46,7 @@ class AudioService {
           stayAwake: false,
           contentType: AndroidContentType.sonification,
           usageType: AndroidUsageType.alarm,
-          audioFocus: AndroidAudioFocus.gainTransientMayDuck,
+          audioFocus: AndroidAudioFocus.gainTransient,
         ),
       ),
     );
@@ -62,7 +58,6 @@ class AudioService {
           category: AVAudioSessionCategory.playback,
           options: const {
             AVAudioSessionOptions.mixWithOthers,
-            AVAudioSessionOptions.duckOthers,
           },
         ),
         android: const AudioContextAndroid(
@@ -71,7 +66,7 @@ class AudioService {
           stayAwake: false,
           contentType: AndroidContentType.sonification,
           usageType: AndroidUsageType.alarm,
-          audioFocus: AndroidAudioFocus.gainTransientMayDuck,
+          audioFocus: AndroidAudioFocus.gainTransient,
         ),
       ),
     );
@@ -82,75 +77,73 @@ class AudioService {
     _audioSessionConfigured = true;
   }
 
-  Future<void> _initTts() async {
-    if (_ttsInitialized) return;
-    await _tts.setLanguage('en-US');
-    await _tts.setSpeechRate(0.45);
-    await _tts.setVolume(1.0);
-    await _tts.setPitch(1.3);
-    // Configure TTS to play over music with ducking
-    await _tts.setSharedInstance(true);
-    await _tts.setIosAudioCategory(
-      IosTextToSpeechAudioCategory.playback,
-      [
-        IosTextToSpeechAudioCategoryOptions.mixWithOthers,
-        IosTextToSpeechAudioCategoryOptions.duckOthers,
-      ],
-      IosTextToSpeechAudioMode.voicePrompt,
-    );
-    _ttsInitialized = true;
-  }
-
-  Future<void> speak(String text) async {
-    if (!_enabled) return;
-    await _initTts();
-    await _tts.speak(text);
+  Future<void> _playVoice(String filename) async {
+    await _playAsset('audio/voice/$filename.m4a');
   }
 
   Future<void> announceHalfway() async {
-    await speak('Halfway there');
+    await _playVoice('halfway');
   }
 
   Future<void> announceTenSeconds() async {
-    await speak('Ten seconds');
+    await _playVoice('ten_seconds');
   }
 
   Future<void> announceSegmentStart(String segmentType) async {
-    await speak(segmentType);
+    final filename = switch (segmentType) {
+      "AMRAP, Let's go!" => 'amrap',
+      "For Time, Let's go!" => 'for_time',
+      "EMOM, Let's go!" => 'emom',
+      "Tabata, Let's go!" => 'tabata',
+      "Tempo, Let's go!" => 'tempo',
+      'Rest' => 'rest',
+      _ => null,
+    };
+    if (filename != null) {
+      await _playVoice(filename);
+    }
   }
 
   Future<void> announceEmomRound(int round) async {
-    await speak('Round $round');
+    if (round >= 1 && round <= 30) {
+      await _playVoice('round_$round');
+    }
   }
 
   Future<void> announceWorkoutComplete() async {
-    await speak("Time!");
+    await _playVoice('time');
   }
 
   Future<void> speakNumber(int number) async {
-    final word = switch (number) {
-      0 => 'Zero',
-      1 => 'One',
-      2 => 'Two',
-      3 => 'Three',
-      4 => 'Four',
-      5 => 'Five',
-      6 => 'Six',
-      7 => 'Seven',
-      8 => 'Eight',
-      9 => 'Nine',
-      10 => 'Ten',
-      _ => number.toString(),
+    final filename = switch (number) {
+      0 => 'zero',
+      1 => 'one',
+      2 => 'two',
+      3 => 'three',
+      4 => 'four',
+      5 => 'five',
+      6 => 'six',
+      7 => 'seven',
+      8 => 'eight',
+      9 => 'nine',
+      10 => 'ten',
+      _ => null,
     };
-    await speak(word);
+    if (filename != null) {
+      await _playVoice(filename);
+    }
   }
 
   Future<void> announceTempoRound(int round) async {
-    await speak('Round $round');
+    if (round >= 1 && round <= 30) {
+      await _playVoice('round_$round');
+    }
   }
 
   Future<void> announceTempoRep(int rep) async {
-    await speak('Rep $rep');
+    if (rep >= 1 && rep <= 30) {
+      await _playVoice('rep_$rep');
+    }
   }
 
   Future<void> playSound(SoundType type) async {
@@ -227,12 +220,10 @@ class AudioService {
 
   Future<void> stop() async {
     await _player.stop();
-    await _tts.stop();
   }
 
   void dispose() {
     _player.dispose();
-    _tts.stop();
   }
 }
 
